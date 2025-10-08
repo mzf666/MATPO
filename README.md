@@ -4,10 +4,19 @@
 
 Train Multiple Agent Roles Within a Single LLM via Reinforcement Learning.
 
-[![arXiv](https://img.shields.io/badge/arXiv-Coming_Soon.svg)](https://arxiv.org/pdf/2510.04678)
+<!-- [![arXiv](https://img.shields.io/badge/arXiv-Coming_Soon.svg)](https://arxiv.org/pdf/2510.04678)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/)
-[![Code](https://img.shields.io/badge/code-GitHub-black.svg)](https://github.com/mzf666/MATPO)
+[![Code](https://img.shields.io/badge/code-GitHub-black.svg)](https://github.com/mzf666/MATPO) -->
+
+<!-- <hr> -->
+<div align="center">
+
+[![Models](https://img.shields.io/badge/Models-5EDDD2?style=for-the-badge&logo=huggingface&logoColor=ffffff&labelColor)](https://huggingface.co/veggiebird/MATPO-single-agent-14b)
+[![Data](https://img.shields.io/badge/Data-0040A1?style=for-the-badge&logo=huggingface&logoColor=ffffff&labelColor)](https://huggingface.co/datasets/veggiebird/MATPO-data)
+[![Paper](https://img.shields.io/badge/Paper-000000?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2510.04678)
+[![Github](https://img.shields.io/badge/Code-000000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/mzf666/MATPO)
+</div>
 
 
 </div>
