@@ -1,0 +1,42 @@
+hydra:
+  searchpath:
+    - file://verl/trainer/config
+
+defaults:
+  - ppo_trainer
+  - _self_
+
+custom_reward_function:
+  name: simpleqa_compute_score # available scorers: gaia_naive_compute_score, simpleqa_compute_score, browsecomp_compute_score, gpt41_compute_score, cascade_compute_score
+  path: "./verl/utils/reward_score/llm_judge.py"
+reward_model:
+  reward_manager: subagent_tool
+  reward_kwargs:
+    accuracy_reward_weight: 0.9
+    tool_format_reward_weight: 0.1
+    gate_tool_format_reward: False # If set to True, the tool format reward will not be given unless the final answer is correct, even if the tool format is correct. If set to False, the tool format reward will be given as long as the tool format is correct, regardless of whether the final answer is correct.
+    async_process: True
+    batch_size: 300
+    max_retry: 3
+
+data:
+  max_prompt_length: 1024
+  max_response_length: 1024
+  train_batch_size: 256
+  return_raw_chat: True
+
+actor_rollout_ref:
+  hybrid_engine: True
+  rollout:
+    name: sglang
+    multi_turn:
+      enable: True
+      max_turns: 20
+      use_mcp_tool_call: True
+      enable_final_summary: False
+      disable_final_summary_for_main_agent: False
+      max_summary_length: 4096
+      delete_think_from_subagent_tools: False
+      # tool_config_path: "./config/tool_config/mcp_tool_config.yaml"
+
+    include_subagent_tool_rollout_in_loss: True

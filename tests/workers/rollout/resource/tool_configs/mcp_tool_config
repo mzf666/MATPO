@@ -1,0 +1,9 @@
+tools:
+  - class_name: "verl.tools.mcp_tool.MCPTool"
+    config:
+      command: "serper-mcp"
+      args: []
+      env: ["SERPER_API_KEY"]
+    tool_schema:
+      type: "mcp"
+      function: {}

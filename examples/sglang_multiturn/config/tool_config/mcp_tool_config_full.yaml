@@ -1,0 +1,58 @@
+tools:
+  - class_name: "verl.tools.mcp_tool.MCPTool"
+    config:
+      command: "serper-mcp"
+      args: []
+      env: ["SERPER_API_KEY", "HTTPS_PROXY"]
+      server_name: "search_and_scrape_webpage"
+    tool_schema:
+      type: "mcp"
+      function: {}
+  # - class_name: "verl.tools.mcp_tool.MCPTool"
+  #   config:
+  #     command: "python3"
+  #     args: ["verl/tools/python_server.py"]
+  #     env: ["E2B_API_KEY", "HTTPS_PROXY"]
+  #     server_name: "python_interpreter"
+  #   tool_schema:
+  #     type: "mcp"
+  #     function: {}
+  # - class_name: "verl.tools.mcp_tool.MCPTool"
+  #   config:
+  #     command: "python3"
+  #     args: ["verl/tools/vision_mcp_server.py"]
+  #     env: ["ANTHROPIC_API_KEY", "HTTPS_PROXY"]
+  #     server_name: "tool-vqa"
+  #   tool_schema:
+  #     type: "mcp"
+  #     function: {}
+  # - class_name: "verl.tools.mcp_tool.MCPTool"
+  #   config:
+  #     command: "python3"
+  #     args: ["verl/tools/audio_mcp_server.py"]
+  #     env: ["OPENAI_API_KEY", "HTTPS_PROXY"]
+  #     server_name: "tool-transcribe"
+  #   tool_schema:
+  #     type: "mcp"
+  #     function: {}
+  # - class_name: "verl.tools.mcp_tool.MCPTool"
+  #   config:
+  #     command: "python3"
+  #     args: ["verl/tools/reasoning_mcp_server.py"]
+  #     env: ["ANTHROPIC_API_KEY", "HTTPS_PROXY"]
+  #     server_name: "tool-reasoning"
+  #   tool_schema:
+  #     type: "mcp"
+  #     function: {}
+  # - class_name: "verl.tools.mcp_tool.MCPTool"
+  #   config:
+  #     command: "markitdown-mcp"
+  #     server_name: "tool-file-reader"
+  #   tool_schema:
+  #     type: "mcp"
+  #     function: {}
+
+agents:
+  - agent_type: "main_agent"
+    tools:
+      - search_and_scrape_webpage
