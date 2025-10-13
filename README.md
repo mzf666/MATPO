@@ -254,6 +254,172 @@ Based on our experiments, we recommend:
 - **Query Recap**: Recapping original user query in worker prompt significantly improves performance
 - **URL Blocking**: Remember to blocking HuggingFace search results to avoid data leakage
 
+
+## Adding New Tools and Worker-Agents
+
+To add new tools or worker-agents, you need to:
+
+1. **Update the agent-tool configuration file**: modify the `examples/sglang_multiturn/config/tool_config/mcp_tool_config_full_agent.yaml` agent-tool configuration file following the instructions in the following subsections. 
+2. **Update the system prompt of your training data**: update the system prompt of your training data accordingly, to ensure the planner-agent recieve the instructions to call new tools or new worker-agents correctly. A script to establish training data with updated system prompts based on a new agent-tool configuration file is provided in `examples/data_preprocess/update_system_prompt.py`.
+
+In the following subsections, we present some examples on how to add new tools or worker-agents by modifying the agent-tool configuration file.
+
+### Adding New MCP Tools to the Planner-Agent
+You can add a new MCP tool to the planner-agent by adding a new entry to the `tools` list. Before adding the new tool, you need to wrap up your tool server into a standard MCP server. A tutorial on how to building new MCP tools is provided [here](https://miromindai.github.io/MiroFlow/contribute_tools/). 
+
+In this example, we add a new MCP tool for calling a Python interpreter.
+
+```yaml
+tools:
+  - class_name: "verl.tools.mcp_tool.MCPTool"
+    config:
+      command: "serper-mcp"
+      args: []
+      env: ["SERPER_API_KEY", "HTTPS_PROXY"]
+      server_name: "search_and_scrape_webpage"
+    tool_schema:
+      type: "mcp"
+      function: {}
+
+  # A newly added Python interpreter MCP tool.
+  - class_name: "verl.tools.mcp_tool.MCPTool"
+    config:
+      command: "python3"
+      args: ["verl/tools/python_server.py"]
+      env: ["E2B_API_KEY", "HTTPS_PROXY"]
+      server_name: "python_interpreter"
+    tool_schema:
+      type: "mcp"
+      function: {}
+
+  - class_name: "verl.tools.mcp_tool.MCPTool"
+    config:
+      command: ""
+      server_name: "browsing_agent"
+    tool_schema:
+      type: "agent"
+      function: {}
+      schema:
+        name: "search_and_browse"
+        description: "This tool is an agent that performs the subtask of searching and browsing the web for specific missing information and generating the desired answer. The subtask should be clearly defined, include relevant background, and focus on factual gaps. It does not perform vague or speculative subtasks. \nArgs: \n\tsubtask: the subtask to be performed. \nReturns: \n\tthe result of the subtask."
+        parameters:
+          properties:
+            subtask:
+              title: "Subtask"
+              type: "string"
+          required:
+            - "subtask"
+          title: "search_and_browseArguments"
+          type: "object"
+        server_name: "browsing_agent"
+
+agents:
+  - agent_type: "main_agent"
+    tools:
+      - browsing_agent
+      - python_interpreter # Now, the planner-agent can directly call a Python interpreter tool, or it can delegate a searching-and-browsing subtask to the browsing-agent.
+  - agent_type: "browsing_agent"
+    tools:
+      - search_and_scrape_webpage
+```
+
+### Adding New Worker-Agents
+
+You can define and add a new worker-agent by adding a new entry to the `tools` and `agents` list. In this example, we add a new worker-agent for tackling programming subtasks using a Python interpreter. 
+```yaml
+tools:
+  - class_name: "verl.tools.mcp_tool.MCPTool"
+    config:
+      command: "serper-mcp"
+      args: []
+      env: ["SERPER_API_KEY", "HTTPS_PROXY"]
+      server_name: "search_and_scrape_webpage"
+    tool_schema:
+      type: "mcp"
+      function: {}
+
+  # A newly added Python interpreter MCP tool.
+  - class_name: "verl.tools.mcp_tool.MCPTool"
+    config:
+      command: "python3"
+      args: ["verl/tools/python_server.py"]
+      env: ["E2B_API_KEY", "HTTPS_PROXY"]
+      server_name: "python_interpreter"
+    tool_schema:
+      type: "mcp"
+      function: {}
+
+  - class_name: "verl.tools.mcp_tool.MCPTool"
+    config:
+      command: ""
+      server_name: "browsing_agent"
+    tool_schema:
+      type: "agent"
+      function: {}
+      schema:
+        name: "search_and_browse"
+        description: "This tool is an agent that performs the subtask of searching and browsing the web for specific missing information and generating the desired answer. The subtask should be clearly defined, include relevant background, and focus on factual gaps. It does not perform vague or speculative subtasks. \nArgs: \n\tsubtask: the subtask to be performed. \nReturns: \n\tthe result of the subtask."
+        parameters:
+          properties:
+            subtask:
+              title: "Subtask"
+              type: "string"
+          required:
+            - "subtask"
+          title: "search_and_browseArguments"
+          type: "object"
+        server_name: "browsing_agent"
+
+  # A newly added Python coding agent.
+  - class_name: "verl.tools.mcp_tool.MCPTool"
+    config:
+      command: ""
+      server_name: "python_agent"
+    tool_schema:
+      type: "agent"
+      function: {}
+      schema:
+        name: "coding_in_python"
+        description: "This tool is an agent that address subtasks that can be solved via Python programes. The subtask should be clearly defined, include relevant background, and focus on factual gaps. It does not perform vague or speculative subtasks. \nArgs: \n\tsubtask: the subtask to be performed. \nReturns: \n\tthe result of the subtask."
+        parameters:
+          properties:
+            subtask:
+              title: "Subtask"
+              type: "string"
+          required:
+            - "subtask"
+          title: "coding_in_pythonArguments"
+          type: "object"
+        server_name: "python_agent"
+
+agents:
+  - agent_type: "main_agent"
+    tools:
+      - browsing_agent
+      - python_agent # The main-agent can delegate a coding subtask to the python-agent.
+
+  - agent_type: "browsing_agent"
+    tools:
+      - search_and_scrape_webpage
+
+  # A newly added Python coding agent.
+  - agent_type: "python_agent"
+    tools:
+      - python_interpreter # The python-agent can directly call a Python interpreter tool to solve the coding subtask from the main-agent.
+```
+
+### Customizing Your Rollout Orchestration
+
+In this repository, the multi-agent rollout orchestration is implemented the `_async_rollout_a_request()` function in `verl/workers/rollout/sglang_rollout/sglang_rollout.py`. The workflow is sketched as follows:
+
+1. At each intermediate step in planner-agent rollout:
+  - Once a MCP tool-call is parsed from the LLM response, the `_async_rollout_a_request()` function will be called to determine which agent to call, and return the MCP tool-call response. 
+  - Once a worker-agent-call is parsed from the LLM response, the `_async_rollout_a_request()` function will create a new `AsyncRolloutRequest` object for this worker-agent-call, and pass it to `_async_rollout_a_request()` again to trigger a new agentic rollout. 
+2. After the planner-agent rollout terminates (either no further tool-calls are parsed), all the worker-agent rollouts will be collected, serialized, and packed with the planner-agent rollout. 
+3. The packed rollout will be passed to `verl/trainer/ppo/ray_trainer.py` to proceed MATPO training.
+
+You can customize your own rollout orchestration by modifying the logic and scheduling in the `_async_rollout_a_request()` function.
+
 ## Citation
 
 If you find MATPO helpful in your research, please consider citing our paper:
