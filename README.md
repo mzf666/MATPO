@@ -260,7 +260,7 @@ Based on our experiments, we recommend:
 To add new tools or worker-agents, you need to:
 
 1. **Update the agent-tool configuration file**: modify the `examples/sglang_multiturn/config/tool_config/mcp_tool_config_full_agent.yaml` agent-tool configuration file following the instructions in the following subsections. 
-2. **Update the system prompt of your training data**: update the system prompt of your training data accordingly, to ensure the planner-agent recieve the instructions to call new tools or new worker-agents correctly. A script to establish training data with updated system prompts based on a new agent-tool configuration file is provided in `examples/data_preprocess/update_system_prompt.py`.
+2. **Update the system prompt of your training data**: update the system prompt of your training data accordingly, to ensure the planner-agent receive the instructions to call new tools or new worker-agents correctly. A script to establish training data with updated system prompts based on a new agent-tool configuration file is provided in `examples/data_preprocess/update_system_prompt.py`.
 
 In the following subsections, we present some examples on how to add new tools or worker-agents by modifying the agent-tool configuration file.
 
