@@ -536,6 +536,16 @@ For research integrity, yes - especially if your evaluation benchmarks are hoste
 For production systems with no data leakage concerns, this is optional.
 </details>
 
+## Star History
+
+<a href="https://star-history.com/#mzf666/MATPO&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=mzf666/MATPO&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=mzf666/MATPO&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=mzf666/MATPO&type=Date" />
+ </picture>
+</a>
+
 -----
 
 <p align="center">
