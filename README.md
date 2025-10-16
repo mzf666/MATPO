@@ -193,7 +193,7 @@ Configure the Node.js paths and HTTP / HTTPS proxies (if necessary) in the `exam
 Download the training and testing datasets to the `data` directory. The prerpocessed datasets can be downloaded [here](https://huggingface.co/datasets/veggiebird/MATPO-data).
 
 
-Train a Qwen3-14B-base model with MATPO on the MuSiQue dataset and evaluate on the GAIA-text datasets:
+Train a Qwen3-14B-base model with MATPO on the MuSiQue dataset and evaluate on the GAIA-text datasets.
 
 ```bash
 # tested on 16 x (8 x 80G-A800) nodes
@@ -208,6 +208,26 @@ source YOUR_CONDA_PATH activate matpo && \
 cd YOUR_PROJECT_PATH && \
 bash examples/sglang_multiturn/launch.sh \
     examples/sglang_multiturn/qwen3-14b_musique_MATPO.sh
+```
+
+Evaluate a trained MATPO / single-agent model checkpoint.
+```bash
+# test on 2 x (8 x 80G-A800) nodes
+
+export SERPER_API_KEY="YOUR_SERPER_API_KEY" && \
+export OPENAI_API_KEY="YOUR_OPENAI_API_KEY" && \
+export WANDB_API_KEY="YOUR_WANDB_API_KEY" && \
+export SINGLENODE=true && \
+export RAY_DEBUG=legacy && \
+export HYDRA_FULL_ERROR=1 && \
+source YOUR_CONDA_PATH activate matpo && \
+cd YOUR_PROJECT_PATH && \
+bash examples/sglang_multiturn/launch.sh \
+    examples/sglang_multiturn/eval_MATPO.sh
+
+# # To evaluate a trained single-agent GRPO model checkpoint:
+# bash examples/sglang_multiturn/launch.sh \
+#     examples/sglang_multiturn/eval_single_agent.sh
 ```
 
 ## Experiments and Results
@@ -470,8 +490,8 @@ Yes! MATPO is model-agnostic. You can use any decoder-only LLM that supports too
 <summary><b>Q: How many GPUs do I need for training?</b></summary>
 
 For Qwen3-14B-base, we recommend:
-- **Training**: 8x A100/A800 GPUs (80GB)
-- **Inference**: 1-2x A100/A800 GPUs (40GB/80GB)
+- **Training**: 16 x (8 x A100/A800 GPUs (80GB))
+- **Inference**: 2 x (8 x A100/A800 GPUs (80GB))
 
 </details>
 

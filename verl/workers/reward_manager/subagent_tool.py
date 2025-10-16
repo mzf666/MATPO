@@ -488,6 +488,7 @@ class SubagentToolRewardManager(ToolRewardManager):
             extra_info = extra_info_list[i]
             data_source = data_source_list[i]
             mcp_format_reward = tool_format_reward_list[i]
+            accuracy_reward = reward_extra_info["accuracy_reward"][i]
 
             if data_source not in already_print_data_sources:
                 already_print_data_sources[data_source] = 0

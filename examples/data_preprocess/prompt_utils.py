@@ -200,14 +200,12 @@ def get_system_prompt(schema_text: str, agent_type: str = "main_agent") -> str:
         System prompt for the main-agent and agent-tools (e.g. browsing-agent)
     """
 
-    date = str(time.strftime("%Y-%m-%d", time.localtime()))
-
     agentic_prompt = get_agentic_system_prompt(agent_type)
 
     system_prompt = """
 In this environment you have access to a set of tools you can use to answer the user's question.
 
-You only have access to the tools provided below. You can only use one tool per message, and will receive the result of that tool in the user's next response. You use tools step-by-step to accomplish a given task, with each tool-use informed by the result of the previous tool-use. Today is: {date}
+You only have access to the tools provided below. You can only use one tool per message, and will receive the result of that tool in the user's next response. You use tools step-by-step to accomplish a given task, with each tool-use informed by the result of the previous tool-use. Today is: 2025-07-16
 
 # Tool-Use Formatting Instructions
 
@@ -222,7 +220,7 @@ Parameters:
 - server_name: (required) The name of the MCP server providing the tool
 - tool_name: (required) The name of the tool to execute
 - arguments: (required) A JSON object containing the tool's input parameters, following the tool's input schema, quotes within string must be properly escaped, ensure it's valid JSON
-""".format(date=date)
+"""
 
     system_prompt += """   
 Usage:

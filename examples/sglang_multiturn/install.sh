@@ -15,6 +15,9 @@ pip install "transformers[hf_xet]>=4.51.0" accelerate datasets peft hf-transfer 
 
 pip install "nvidia-ml-py>=12.560.30" "fastapi[standard]>=0.115.0" "optree>=0.13.0" "pydantic>=2.9" "grpcio>=1.62.1"
 
+# Ensure Ray dashboard dependencies are complete
+pip install async_timeout aiohttp aiohttp-cors "click==8.2.1"
+
 
 echo "3. install FlashAttention"
 # Install flash-attn-2.7.4.post1 (cxx11abi=False)
