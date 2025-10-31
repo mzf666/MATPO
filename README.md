@@ -51,6 +51,7 @@ Train Multiple Agent Roles Within a Single LLM via Reinforcement Learning.
 
 ## News & Updates
 
+- **[2025-Oct-31]** Quick start guide with PyTorch basic docker image released
 - **[2025-Oct-08]** MATPO-Qwen3-14B checkpoints and rollouts released
 - **[2025-Oct-08]** Code and training scripts released
 - **[2025-Oct-06]** Arxiv Paper released
@@ -135,65 +136,111 @@ User Query → Planner Agent → Subtask 1 → Worker Agent → Result 1
 
 ## Quick Start
 
-Prerequisites:
-- Python 3.10 or higher
-- CUDA 12.4+ (for GPU support)
-- 16 x (8 x 80G-A800) GPUs (for training with Qwen3-14B-base)
+This section provide a quick start guide from PyTorch basic docker image.
 
-Clone the repository.
+Prerequisites:
+- You can train a Qwen3-4B model with 1 x (8 x 80G-A800) NVIDIA A800 80GB GPUs. 
+- NVIDIA Driver.
+- Docker with the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+
+**Step 1**: Clone the repository.
 ```bash
+cd YOUR_WORKING_DIR
 git clone https://github.com/mzf666/MATPO.git
 cd MATPO
 ```
 
-For prerequisites installation (CUDA, cuDNN, Apex), we recommend following the [verl prerequisites guide](https://verl.readthedocs.io/en/latest/start/install.html#pre-requisites) which provides detailed instructions for:
+**Step 2**: Download the training and testing datasets to the `data` directory. The prerpocessed datasets can be downloaded [here](https://huggingface.co/datasets/veggiebird/MATPO-data).
 
-- CUDA: Version >= 12.4
-- cuDNN: Version >= 9.8.0
-- Apex
-
-Setup environment and install dependencies.
+**Step 3**: Launch the PyTorch docker container. Make sure the mounted directories are writable.
 ```bash
+docker pull pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel
+docker run -it \
+    --gpus all \
+    --shm-size 16gb \
+    --name matpo \
+    -v YOUR_WORKING_DIR/MATPO:/workspace/MATPO:rw \
+    -v YOUR_WORKING_DIR/models:/workspace/models \
+    -w /workspace/MATPO \
+    pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
+    /bin/bash
+```
+Now you are in the PyTorch docker container.
+
+**Step 4**:  Start to install the python dependencies inside the docker container.
+```bash
+# Execute the following commands inside the docker container
+
+# Create a new conda environment for MATPO
 conda create -n matpo python==3.10 -y
+conda init bash
+source /opt/conda/etc/profile.d/conda.sh
 conda activate matpo
-bash examples/sglang_multiturn/install.sh
+
+# Install the python dependencies
+# You are highy recommended to execute the commands in the install.sh script one by one.
+source /workspace/MATPO/examples/sglang_multiturn/install.sh
 ```
 
-Setup Node.js for Serper API support. 
-
-MCP (Model Context Protocol) requires Node.js to run MCP servers. Node.js version 18+ is recommended for optimal compatibility with MCP tools.
+**Step 5**: Setup Node.js for Serper API support inside the docker container. 
+> MCP (Model Context Protocol) requires Node.js to run MCP servers. Node.js version 18+ is recommended for optimal compatibility with MCP tools. Configure the Node.js paths and HTTP / HTTPS proxies (if necessary) in the `examples/sglang_multiturn/run_in_docker/launch.sh` script properly.
 ```bash
-target_path=YOUR_TARGET_PATH
-
-# Download Node.js binary (example for Linux x64)
+# Install Node.js
+apt-get update && apt-get install -y wget xz-utils git
+cd /workspace
 wget https://nodejs.org/dist/v24.2.0/node-v24.2.0-linux-x64.tar.xz
+cd -
 
-# Extract to your target path
-tar -xf node-v24.2.0-linux-x64.tar.xz -C $target_path
+NODEJS_HOME=/workspace/nodejs
+mkdir -p $NODEJS_HOME
+tar -xf /workspace/node-v24.2.0-linux-x64.tar.xz -C $NODEJS_HOME
 
-# Add to PATH
-export NODEJS_HOME=$target_path/node-v24.2.0-linux-x64
+# Configure Node.js environment variables
 export PATH=$NODEJS_HOME/bin:$PATH
-export NODE_SHARED=$target_path/node-shared/node_modules
+export NODE_SHARED=$NODEJS_HOME/node-shared/node_modules
 export PATH=$NODE_SHARED/.bin:$PATH
 
-# Verify installation
+# Verify Node.js installation
 node --version
 npm --version
 
-# Install serper mcp server
+# Install Serper MCP Server
 mkdir -p $target_path/node-shared
 cd $target_path/node-shared
 npm init -y
 npm install serper-search-scrape-mcp-server
+
+# Back to MATPO repository
+cd /workspace/MATPO 
 ```
 
-Configure the Node.js paths and HTTP / HTTPS proxies (if necessary) in the `examples/sglang_multiturn/launch.sh` script properly.
+**Step 6**: Test the environment setup and run single-node training. Train a Qwen3-4B model with MATPO on the MuSiQue dataset and evaluate on the GAIA-text datasets. 
 
-Download the training and testing datasets to the `data` directory. The prerpocessed datasets can be downloaded [here](https://huggingface.co/datasets/veggiebird/MATPO-data).
+Remember to adjust the directory paths in `examples/sglang_multiturn/launch.sh` accordingly, e.g. `YOUR_NODEJS_HOME=/workspace/nodejs/node-v24.2.0-linux-x64` and `YOUR_NODE_SHARED=/workspace/nodejs/node-shared/node_modules`.
 
+```bash
+# Execute the following commands inside the docker container
+# Tested on 1 x (8 x 80G-A800) nodes
 
-Train a Qwen3-14B-base model with MATPO on the MuSiQue dataset and evaluate on the GAIA-text datasets.
+#!/bin/bash
+source /opt/conda/etc/profile.d/conda.sh
+export SERPER_API_KEY="YOUR_SERPER_API_KEY"
+export OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
+export WANDB_API_KEY="YOUR_WANDB_API_KEY"
+export SINGLENODE=true
+export RAY_DEBUG=legacy
+export HYDRA_FULL_ERROR=1
+conda activate matpo
+cd /workspace/MATPO
+bash ./examples/sglang_multiturn/launch.sh \
+    examples/sglang_multiturn/qwen3-4b_musique_single_agent.sh
+
+# bash ./examples/sglang_multiturn/run_in_docker/launch.sh ./examples/sglang_multiturn/run_in_docker/qwen3-4b_musique_single_agent.sh
+```
+
+If you counter any issues during the environment setup, you can refer to the `examples/sglang_multiturn/pip_list_reference.txt` for the expected python dependencies list and check the installation process step by step.
+
+**Step 7**: Train a Qwen3-14B model with MATPO on the MuSiQue dataset and evaluate on the GAIA-text datasets using computation platforms with multiple GPU nodes. Remember to adjust the directory paths in `examples/sglang_multiturn/launch.sh` accordingly. 
 
 ```bash
 # tested on 16 x (8 x 80G-A800) nodes

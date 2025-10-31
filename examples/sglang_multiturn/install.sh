@@ -10,13 +10,13 @@ pip install --no-cache-dir "vllm==0.8.5.post1" "torch==2.6.0" "torchvision==0.21
 echo "2. install basic packages"
 pip install "transformers[hf_xet]>=4.51.0" accelerate datasets peft hf-transfer \
     "numpy<2.0.0" "pyarrow>=15.0.0" pandas \
-    ray[default] codetiming hydra-core pylatexenc qwen-vl-utils wandb dill pybind11 liger-kernel mathruler \
+    "ray[default]==2.49.2" codetiming hydra-core pylatexenc qwen-vl-utils wandb dill pybind11 liger-kernel mathruler \
     pytest py-spy pyext pre-commit ruff mcp==1.10.1 tenacity
 
 pip install "nvidia-ml-py>=12.560.30" "fastapi[standard]>=0.115.0" "optree>=0.13.0" "pydantic>=2.9" "grpcio>=1.62.1"
 
-# Ensure Ray dashboard dependencies are complete
-pip install async_timeout aiohttp aiohttp-cors "click==8.2.1"
+# Ensure Ray dashboard dependencies are complete with fixed uvloop version
+pip install async_timeout "aiohttp==3.12.15" aiohttp-cors "click==8.2.1" "uvloop==0.21.0"
 
 
 echo "3. install FlashAttention"

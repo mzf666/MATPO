@@ -16,9 +16,13 @@ BYPASS_INSTALL=${BYPASS_INSTALL:-false}
 if [ "$BYPASS_INSTALL" != "true" ]; then
     # Install customized VeRL
     unset HTTP_PROXY HTTPS_PROXY
-    pip install -e .[sglang] --user --no-deps
+    pip install -e .[sglang] --no-deps
     # pip install remote-pdb
-    pip install protobuf==5.29.5 --user
+    pip install protobuf==5.29.5
+    
+    # Fix Ray dashboard dependencies with fixed uvloop version
+    echo "Ensuring Ray dashboard dependencies are installed..."
+    pip install async_timeout "aiohttp>=3.12,<3.14" aiohttp-cors "uvloop==0.21.0"
 fi
 
 pip list
