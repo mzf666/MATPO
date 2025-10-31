@@ -51,6 +51,7 @@ Train Multiple Agent Roles Within a Single LLM via Reinforcement Learning.
 
 ## News & Updates
 
+- **[2025-Oct-31]** Enabled LoRA support for MATPO training
 - **[2025-Oct-31]** Quick start guide with PyTorch basic docker image released
 - **[2025-Oct-08]** MATPO-Qwen3-14B checkpoints and rollouts released
 - **[2025-Oct-08]** Code and training scripts released
@@ -276,6 +277,30 @@ bash examples/sglang_multiturn/launch.sh \
 # bash examples/sglang_multiturn/launch.sh \
 #     examples/sglang_multiturn/eval_single_agent.sh
 ```
+
+## LoRA-enabled MATPO training
+
+We enabled LoRA support for MATPO training. Please refer to `MATPO_LORA_README.md` for more illustrations. An example command for LoRA-enabled MATPO training on Qwen3-4B is provided below:
+ 
+```bash
+# Execute the following commands inside the docker container
+# Tested on 1 x (8 x 80G-A800) nodes
+
+#!/bin/bash
+source /opt/conda/etc/profile.d/conda.sh
+export SERPER_API_KEY="YOUR_SERPER_API_KEY"
+export OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
+export WANDB_API_KEY="YOUR_WANDB_API_KEY"
+export SINGLENODE=true
+export RAY_DEBUG=legacy
+export HYDRA_FULL_ERROR=1
+conda activate matpo
+cd /workspace/MATPO
+bash ./examples/sglang_multiturn/launch.sh \
+    examples/sglang_multiturn/qwen3-4b_musique_MATPO_lora.sh
+```
+
+⚠️ **Disclaimer**: While the LoRA-enabled MATPO training script is provided, its performance **is not thoroughly evaluated and guaranteed**. LoRA-enabled MATPO training is still an active research area and there may be better ways to train MATPO with LoRA. We welcome any feedback and contributions to evaluate and improve the LoRA-enabled MATPO training performance.
 
 ## Experiments and Results
 

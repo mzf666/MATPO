@@ -104,6 +104,25 @@ class FSDPSGLangShardingManager(BaseShardingManager):
             device = torch.cuda.current_device()  # used when fsdp2 set cpu_offload_policy
             params = {k: v.to(device, non_blocking=True) if fsdp_version(self.module) == 2 else v for k, v in params.items()}
             params = convert_weight_keys(params, getattr(self.module, "_fsdp_wrapped_module", self.module))
+            
+            # Handle LoRA parameter name conversion for SGLang
+            unwrapped_module = getattr(self.module, "_fsdp_wrapped_module", self.module)
+            if hasattr(unwrapped_module, "peft_config"):
+                # Model has LoRA enabled, need to merge LoRA weights into base model
+                logger.info("LoRA detected, will merge LoRA weights into base model for SGLang")
+                
+                # Get LoRA config for proper scaling
+                peft_config = unwrapped_module.peft_config
+                if peft_config:
+                    # Get the first adapter config (usually "default")
+                    adapter_name = list(peft_config.keys())[0]
+                    config = peft_config[adapter_name]
+                    self._lora_scaling = config.lora_alpha / config.r
+                    logger.info(f"LoRA scaling factor: {self._lora_scaling:.2f} (alpha={config.lora_alpha}, rank={config.r})")
+                else:
+                    self._lora_scaling = 2.0  # Fallback
+                
+                params = self._convert_lora_params_to_base_names(params)
             # loop = asyncio.get_event_loop()
             # NOTE: try catch to avoid the event loop is not initialized error raised in calling _async_rollout_a_request() inside an _async_rollout_a_batch() in the multi-agent setting
             try:
@@ -147,7 +166,92 @@ class FSDPSGLangShardingManager(BaseShardingManager):
         if self.device_mesh is not None:
             self.gen_random_states = torch.cuda.get_rng_state()
             torch.cuda.set_rng_state(self.torch_random_states)
-
+            
+    def _convert_lora_params_to_base_names(self, params):
+        """
+        Convert LoRA parameter names to base model names for SGLang.
+        
+        Has two modes:
+        1. If LoRA adapters present: Manually merge LoRA (A @ B) into base weights
+        2. If only base weights: Just convert names
+        
+        This ensures SGLang uses the complete trained model.
+        """
+        converted_params = {}
+        lora_params = {}
+        
+        # First pass: separate base params and LoRA params
+        for name, param in params.items():
+            if "lora_A" in name or "lora_B" in name:
+                lora_params[name] = param
+            elif "lora_embedding_" in name or "modules_to_save" in name:
+                continue  # Skip these
+            else:
+                # This is a base layer parameter
+                clean_name = name
+                if clean_name.startswith("base_model.model."):
+                    clean_name = clean_name[len("base_model.model."):]
+                clean_name = clean_name.replace(".base_layer.", ".")
+                converted_params[clean_name] = param
+        
+        # Second pass: merge LoRA weights into base weights
+        if lora_params:
+            logger.info(f"Found {len(lora_params)} LoRA parameters, performing manual merge")
+            merged_count = 0
+            
+            # Group LoRA params by layer
+            lora_groups = {}
+            for name, param in lora_params.items():
+                # Extract base name (remove lora_A/lora_B.default.weight suffix)
+                if "lora_A" in name:
+                    base_name = name.replace(".lora_A.default.weight", "")
+                elif "lora_B" in name:
+                    base_name = name.replace(".lora_B.default.weight", "")
+                else:
+                    continue
+                
+                if base_name not in lora_groups:
+                    lora_groups[base_name] = {}
+                
+                if "lora_A" in name:
+                    lora_groups[base_name]['A'] = param
+                else:
+                    lora_groups[base_name]['B'] = param
+            
+            # Merge each LoRA adapter into corresponding base weight
+            for base_name, lora_pair in lora_groups.items():
+                if 'A' not in lora_pair or 'B' not in lora_pair:
+                    continue
+                
+                # Convert PEFT name to base model name
+                clean_name = base_name
+                if clean_name.startswith("base_model.model."):
+                    clean_name = clean_name[len("base_model.model."):]
+                clean_name = clean_name.replace(".base_layer", "")
+                clean_name = clean_name + ".weight"  # LoRA only applies to weights
+                
+                if clean_name in converted_params:
+                    # Merge: W = W_base + (B @ A) * scaling
+                    # scaling = lora_alpha / lora_rank
+                    lora_A = lora_pair['A']
+                    lora_B = lora_pair['B']
+                    
+                    # Use configured scaling factor
+                    scaling = getattr(self, '_lora_scaling', 2.0)
+                    
+                    # Compute delta: B @ A  
+                    # LoRA formula: W = W_base + scaling * (B @ A)
+                    delta = torch.matmul(lora_B, lora_A) * scaling
+                    
+                    # Add delta to base weight (in-place to save memory)
+                    converted_params[clean_name] = converted_params[clean_name] + delta
+                    merged_count += 1
+            
+            logger.info(f"Merged {merged_count} LoRA adapters into base model weights for SGLang")
+        
+        logger.info(f"Prepared {len(converted_params)} parameters for SGLang (LoRA merged: {len(lora_params) > 0})")
+        return converted_params
+    
     async def update_weights(self, params):
         if self.device_mesh["infer_tp"].get_local_rank() == 0:
             await self.inference_engine.resume_memory_occupation()
@@ -195,6 +299,24 @@ class FSDPSGLangShardingManager(BaseShardingManager):
         log_gpu_memory_usage("After state_dict() in sharding manager memory", logger=logger)
         device = torch.cuda.current_device()  # used when fsdp2 set cpu_offload_policy
         params = {k: v.to(device, non_blocking=True) if fsdp_version(self.module) == 2 else v for k, v in params.items()}
+        params = convert_weight_keys(params, getattr(self.module, "_fsdp_wrapped_module", self.module))
+        
+        # Handle LoRA parameter name conversion for SGLang
+        unwrapped_module = getattr(self.module, "_fsdp_wrapped_module", self.module)
+        if hasattr(unwrapped_module, "peft_config"):
+            logger.info("LoRA detected in wake_up, will merge LoRA weights for SGLang")
+            
+            # Get LoRA config for proper scaling
+            peft_config = unwrapped_module.peft_config
+            if peft_config:
+                adapter_name = list(peft_config.keys())[0]
+                config = peft_config[adapter_name]
+                self._lora_scaling = config.lora_alpha / config.r
+            else:
+                self._lora_scaling = 2.0
+            
+            params = self._convert_lora_params_to_base_names(params)
+        
         # Copy, not share memory
         await self.update_weights(params)
         log_gpu_memory_usage("After sync model weights in sharding manager", logger=logger)
