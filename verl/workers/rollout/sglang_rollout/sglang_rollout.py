@@ -1430,10 +1430,8 @@ Provide a detailed answer and supporting information for this subtask. Your answ
             loop.run_until_complete(self._engine.flush_cache())
 
         # Serialize each list to avoid dimension mismatch
-        if any(reqs_from_subagents):
-            reqs_from_subagents_serialized = np.array([pickle.dumps(req_list) for req_list in reqs_from_subagents], dtype=object)
-        else:
-            reqs_from_subagents_serialized = np.array(reqs_from_subagents, dtype=object)
+        # Always create 1D array to ensure consistent dimensions across workers
+        reqs_from_subagents_serialized = np.array([pickle.dumps(req_list) for req_list in reqs_from_subagents], dtype=object)
 
         return DataProto(
             batch=batch,

@@ -95,7 +95,7 @@ class AsyncRolloutRequest(BaseModel):
     max_response_len: int = 8192
     max_model_len: int = 32768
     metrics: Dict[str, List[Any]] = {}
-    reqs_from_subagents: Optional[List[Dict[str, Any]]] = None  # For tracking agent call hierarchy, to edit
+    reqs_from_subagents: Optional[List["AsyncRolloutRequest"]] = None  # For tracking agent call hierarchy, to edit
     is_from_subagent_tool: bool = False
     parent_req_id: str = None
     turn_count: int = None # for tracking the turn count of the request from the subagent tool call raised by the main agent
